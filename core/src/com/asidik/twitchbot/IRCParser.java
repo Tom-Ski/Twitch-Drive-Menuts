@@ -1,6 +1,5 @@
 package com.asidik.twitchbot;
 
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -9,26 +8,22 @@ import java.util.regex.Pattern;
  */
 public class IRCParser {
 
-    private ConcurrentHashMap<InputType, Integer> votes = new ConcurrentHashMap<InputType, Integer>();
+    InputManager manager;
 
-    public enum MessageType {
-        PRIVMSG
-    }
-
-    public enum InputType {
-        UP, DOWN, RIGHT, LEFT
+    public IRCParser (InputManager manager) {
+        this.manager = manager;
     }
 
     private String regexPattern = "^(:(?<prefix>\\S+) )?(?<command>\\S+)( (?!:)(?<params>.+?))?( :(?<trail>.+))?$";
     private Pattern regex = Pattern.compile(regexPattern);
 
-    public boolean parse(String line) {
+    public boolean parse (String line) {
         Matcher match = regex.matcher(line);
         try {
             if (match.matches()) {
                 switch (MessageType.valueOf(match.group("command"))) {
                     case PRIVMSG:
-                        return parseMessage(match.group("trail"));
+                        return parseMessage(match.group("prefix").split("!")[0], match.group("trail"));
                     default:
                         return false;
                 }
@@ -37,8 +32,9 @@ public class IRCParser {
         return false;
     }
 
-    public ConcurrentHashMap<InputType, Integer> getVotes() {
-        return votes;
+
+    private void addVote (UserInput userInput) {
+        manager.registerVote(userInput);
     }
 
     /**
@@ -47,19 +43,23 @@ public class IRCParser {
      * @param line
      * @return
      */
-    private boolean parseMessage(String line) {
+    private boolean parseMessage(String user, String line) {
         System.out.println("Args: " + line);
         InputType type = null;
         try {
             type = InputType.valueOf(line.toUpperCase());
-            if (votes.containsKey(type)) {
-                votes.put(type, votes.get(type) + 1);
-            } else {
-                votes.put(type, 1);
-            }
+            UserInput input = new UserInput(user, type);
+            System.out.println(user);
+            addVote(input);
             return true;
-        } catch (Exception e) {}
+        } catch (Exception e) {
+            System.out.println(e);
+        }
         return false;
+    }
+
+    public enum MessageType {
+        PRIVMSG
     }
 
 }

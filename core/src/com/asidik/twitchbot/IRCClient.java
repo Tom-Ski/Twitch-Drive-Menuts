@@ -8,7 +8,7 @@ import java.net.Socket;
  */
 public class IRCClient extends Thread {
 
-    private IRCParser parser = new IRCParser();
+    private IRCParser parser;
 
     private Socket socket;
     private BufferedWriter writer;
@@ -18,30 +18,30 @@ public class IRCClient extends Thread {
     private int port;
     private String nick;
 
-    public IRCClient(String server, int port, String nick) {
+    public IRCClient(InputManager manager, String server, int port, String nick) {
         this.server = server;
         this.port = port;
         this.nick = nick;
+        parser = new IRCParser(manager);
     }
 
     public void connect() throws Exception {
         socket = new Socket(server, port);
         writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-        reader = new BufferedReader(new InputStreamReader( socket.getInputStream()));
+        reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
         // Log on
         writer.write("NICK " + nick + "\r\n");
         writer.write("USER " + nick + " 8 * : Twitch Drives Menuts\r\n");
-        writer.flush( );
+        writer.flush();
 
         String line = null;
-        while ((line = reader.readLine( )) != null) {
+        while ((line = reader.readLine()) != null) {
             System.out.println(line);
             if (line.indexOf("004") >= 0) {
                 // We are now logged in.
                 break;
-            }
-            else if (line.indexOf("433") >= 0) {
+            } else if (line.indexOf("433") >= 0) {
                 System.out.println("Nicknamelready in use.");
                 return;
             }
@@ -49,7 +49,7 @@ public class IRCClient extends Thread {
         System.out.println("conn");
         // Join the channel.
         writer.write("JOIN #drivemenuts \r\n");
-        writer.flush( );
+        writer.flush();
 
         start();
     }
@@ -70,8 +70,7 @@ public class IRCClient extends Thread {
                     }
                 } else {
                     if (parser.parse(line)) {
-                        writer.write("PRIVMSG #drivemenuts :" + parser.getVotes().toString() + "\r\n");
-                        writer.flush();
+                        System.out.println("SUCCESS!");
                     }
                 }
                 Thread.sleep(20);
