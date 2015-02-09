@@ -79,4 +79,13 @@ public class IRCClient extends Thread {
             e.printStackTrace();
         }
     }
+
+    public void sendMessage(String channel, String message) {
+        try {
+            writer.write("PRIVMSG #" + channel + " :" + message + "\r\n");
+            writer.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
