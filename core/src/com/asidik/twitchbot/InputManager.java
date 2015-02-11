@@ -1,5 +1,11 @@
 package com.asidik.twitchbot;
 
+import com.sun.org.apache.xpath.internal.SourceTree;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -12,6 +18,10 @@ public class InputManager extends Thread {
     private ConcurrentHashMap<InputType, Integer> votes;
     private InputDisplay display;
 
+    private ServerSocket serverSocket;
+    private PrintWriter writer;
+    private boolean menutsConnected;
+
     private static final long COUNT_TIMER = 5000L;
     private static long timeLastCount = 0L;
     private static long trackTime = 0L;
@@ -20,6 +30,15 @@ public class InputManager extends Thread {
     public InputManager (Bot bot) {
         super("InputManager");
         this.bot = bot;
+        try {
+            serverSocket = new ServerSocket(5000);
+            Socket clientSocket = serverSocket.accept();
+            writer = new PrintWriter(clientSocket.getOutputStream(), true);
+            menutsConnected = true;
+            System.out.println("Connected");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         votes = new ConcurrentHashMap<InputType, Integer>();
         for (InputType type : InputType.values()) {
             votes.put(type, 0);
@@ -46,7 +65,15 @@ public class InputManager extends Thread {
         }
         if (mostVoted != null) {
             bot.client.sendMessage("drivemenuts", "Most voted: " + mostVoted.toString());
+            if (menutsConnected) {
+                sendInputPacket(mostVoted);
+            }
         }
+    }
+
+    private void sendInputPacket(InputType mostVoted) {
+        writer.println(mostVoted.name());
+        writer.flush();
     }
 
     private void clearVotes() {
@@ -69,8 +96,6 @@ public class InputManager extends Thread {
         while (true) {
             delta = System.currentTimeMillis() - timeLastCount;
             trackTime += delta;
-
-            System.out.println(trackTime);
 
             if (trackTime > COUNT_TIMER) {
                 countVotes();

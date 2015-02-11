@@ -101,13 +101,13 @@ public class InputWindow extends Window {
     private Image getArrow (InputType type) {
         switch (type) {
             case UP:
-                return up;
+                return new Image(up.getDrawable());
             case DOWN:
-                return down;
+                return new Image(down.getDrawable());
             case RIGHT:
-                return right;
+                return new Image(right.getDrawable());
             case LEFT:
-                return left;
+                return new Image(left.getDrawable());
         }
         return null;
     }
